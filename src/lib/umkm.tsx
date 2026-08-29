@@ -40,6 +40,30 @@ export function UMKMProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh();
+
+    const handleFocus = () => {
+      void refresh();
+    };
+
+    const handleOnline = () => {
+      void refresh();
+    };
+
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        void refresh();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   return (
