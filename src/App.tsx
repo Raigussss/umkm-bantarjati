@@ -17,59 +17,6 @@ import Register from "./pages/Register";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminPanel from "./pages/admin/AdminPanel";
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
-};
-
-function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    const handleAppInstalled = () => {
-      setVisible(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setVisible(false);
-  };
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <button
-        type="button"
-        onClick={handleInstall}
-        className="rounded-full bg-[#5a3825] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#5a3825]/30 transition hover:bg-[#4a2d1d]"
-      >
-        Install app
-      </button>
-    </div>
-  );
-}
-
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAuth();
   return isAdmin ? <>{children}</> : <Navigate to="/admin" replace />;
@@ -140,7 +87,6 @@ export default function App() {
     <AuthProvider>
       <UMKMProvider>
         <BrowserRouter>
-          <InstallPrompt />
           <AppRoutes />
         </BrowserRouter>
       </UMKMProvider>
