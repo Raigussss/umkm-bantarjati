@@ -1,9 +1,11 @@
-const CACHE_NAME = 'umkm-bantarjati-v1';
-const ASSETS = ['/'];
+const CACHE_NAME = 'umkm-bantarjati-v2';
+const APP_SHELL = ['/'];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
+
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => undefined),
   );
 });
 
@@ -11,23 +13,51 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
-    ),
+    ).then(() => self.clients.claim()),
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/'))),
+    );
+    return;
+  }
+
+  const isAppAsset = /\.(?:js|css|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|map)$/.test(url.pathname);
+
+  if (!isAppAsset) {
+    return;
+  }
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request).then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request).then((response) => {
+        if (response && response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        }
         return response;
       }).catch(() => cached);
+
+      return cached || fetchPromise;
     }),
   );
 });
