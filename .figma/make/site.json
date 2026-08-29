@@ -1,0 +1,10 @@
+{
+  "description": "Provides a simple, intuitive platform for users to quickly input and manage text-based tasks, enhancing productivity and organization.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
